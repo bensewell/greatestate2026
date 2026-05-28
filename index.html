@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Great Estate 2026 Planner</title>
+<style>
+  :root { 
+    --bg: #fdf5e6; 
+    --primary: #2b5c46; 
+    --accent: #e45b4c; 
+    --text: #333; 
+  }
+  body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+    background: var(--bg); color: var(--text); 
+    margin: 0; padding: 0; 
+  }
+  header { 
+    background: var(--primary); color: white; 
+    padding: 1rem; text-align: center; 
+    position: sticky; top: 0; z-index: 100; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+  header h1 { margin: 0; font-size: 1.5em; }
+  .controls { 
+    display: flex; gap: 10px; overflow-x: auto; 
+    padding: 15px 10px; background: #e9e0ce; 
+  }
+  button { 
+    border: none; padding: 10px 18px; 
+    border-radius: 20px; cursor: pointer; font-weight: bold; 
+    background: white; color: var(--primary); 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    white-space: nowrap;
+  }
+  button.active { background: var(--primary); color: white; }
+  button.action-btn { background: var(--accent); color: white; }
+  button.action-btn.active { background: #b84033; }
+  .all-day-banner {
+    background: #e8f4ec; color: var(--primary); padding: 12px;
+    font-size: 0.85em; text-align: center; border-bottom: 1px solid #d1e5d8;
+  }
+  .schedule { padding: 10px; padding-bottom: 50px; }
+  .act-card { 
+    background: white; margin-bottom: 12px; padding: 15px; 
+    border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+    display: flex; justify-content: space-between; align-items: center; 
+  }
+  .act-card.now { border-left: 6px solid var(--accent); }
+  .time { font-weight: bold; color: var(--primary); font-size: 1.1em; line-height: 1.2; min-width: 60px;}
+  .details { flex-grow: 1; margin: 0 15px; }
+  .act-name { font-size: 1.2em; font-weight: bold; margin-bottom: 4px; }
+  .stage { font-size: 0.9em; color: #666; }
+  .star { font-size: 1.8em; color: #ddd; cursor: pointer; user-select: none; transition: color 0.2s;}
+  .star.active { color: #f1c40f; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Great Estate 2026</h1>
+  <div style="font-size: 0.9em; margin-top: 5px;">Interactive Personal Planner</div>
+</header>
+
+<div class="controls" id="day-controls">
+  <button class="day-btn active" data-day="Friday">Friday</button>
+  <button class="day-btn" data-day="Saturday">Saturday</button>
+  <button class="day-btn" data-day="Sunday">Sunday</button>
+</div>
+
+<div class="controls">
+  <button id="btn-now" class="action-btn">🔥 What's On Now</button>
+  <button id="btn-favs" class="action-btn">⭐ My Favourites</button>
+</div>
+
+<div class="all-day-banner">
+  <strong>🌟 All Weekend Drop-ins:</strong> Silent Cinema (Whispering Woods) • Mud Kitchen Free Play • Earthy Woven Looms • Willow Craft • Macrame • Pottery Lessons • Crochet • Blacksmith Sessions (The Sanctuary)
+</div>
+
+<div class="schedule" id="schedule-container"></div>
+
+<script>
+const schedule = [
+  // --- FRIDAY ---
+  // Stage on the Green
+  { day: "Friday", time: "11:30", endTime: "12:00", stage: "Stage on the Green", name: "Matilda Finn Francis" },
+  { day: "Friday", time: "12:30", endTime: "13:15", stage: "Stage on the Green", name: "Kate Hall" },
+  { day: "Friday", time: "13:45", endTime: "14:45", stage: "Stage on the Green", name: "Droskyn (BOTB Winner)" },
+  { day: "Friday", time: "15:15", endTime: "16:15", stage: "Stage on the Green", name: "Fletchr Fletchr" },
+  { day: "Friday", time: "16:45", endTime: "17:45", stage: "Stage on the Green", name: "Dub Catalysts" },
+  { day: "Friday", time: "18:15", endTime: "19:15", stage: "Stage on the Green", name: "Charlie Noordewier" },
+  { day: "Friday", time: "19:45", endTime: "20:45", stage: "Stage on the Green", name: "The Undercover Hippy" },
+  { day: "Friday", time: "21:30", endTime: "22:45", stage: "Stage on the Green", name: "Kaiser Chiefs" },
+  { day: "Friday", time: "23:00", endTime: "01:30", stage: "Stage on the Green", name: "Silent Disco" },
+  // Madame Wong's
+  { day: "Friday", time: "12:30", endTime: "13:15", stage: "Madame Wong's", name: "Circus Skills Workshop" },
+  { day: "Friday", time: "13:45", endTime: "14:30", stage: "Madame Wong's", name: "The Regalos" },
+  { day: "Friday", time: "15:00", endTime: "15:45", stage: "Madame Wong's", name: "Tooth Gore" },
+  { day: "Friday", time: "16:15", endTime: "17:00", stage: "Madame Wong's", name: "Swamp Circus" },
+  { day: "Friday", time: "17:30", endTime: "18:30", stage: "Madame Wong's", name: "Hedluv & Passman" },
+  { day: "Friday", time: "19:00", endTime: "20:00", stage: "Madame Wong's", name: "SpaceAcre" },
+  { day: "Friday", time: "20:30", endTime: "21:30", stage: "Madame Wong's", name: "DVOTION" },
+  { day: "Friday", time: "22:00", endTime: "23:00", stage: "Madame Wong's", name: "Omega Nebula" },
+  { day: "Friday", time: "23:30", endTime: "00:15", stage: "Madame Wong's", name: "Talulah Blue's Cabaret" },
+  { day: "Friday", time: "00:30", endTime: "02:00", stage: "Madame Wong's", name: "Plump DJs" },
+  // Talks at Teatime
+  { day: "Friday", time: "14:30", endTime: "15:30", stage: "Talks at Teatime", name: "Dark Cornwall - Exploring Cornish Folklore" },
+  // Clunk Presents The Wild Woods
+  { day: "Friday", time: "13:30", endTime: "14:30", stage: "The Wild Woods", name: "The Dollies" },
+  { day: "Friday", time: "15:00", endTime: "16:00", stage: "The Wild Woods", name: "Suits" },
+  { day: "Friday", time: "16:30", endTime: "17:30", stage: "The Wild Woods", name: "Hongza" },
+  { day: "Friday", time: "18:00", endTime: "19:00", stage: "The Wild Woods", name: "Dreamwave" },
+  { day: "Friday", time: "19:30", endTime: "20:30", stage: "The Wild Woods", name: "Adult Leisure" },
+  { day: "Friday", time: "21:00", endTime: "02:00", stage: "The Wild Woods", name: "Ghetto Orange (18+)" },
+  // Secret Gin Garden
+  { day: "Friday", time: "12:15", endTime: "12:45", stage: "Secret Gin Garden", name: "Thief Monkey" },
+  { day: "Friday", time: "13:00", endTime: "13:45", stage: "Secret Gin Garden", name: "Alex Govier" },
+  { day: "Friday", time: "14:15", endTime: "15:00", stage: "Secret Gin Garden", name: "The Lady Garden Ensemble" },
+  { day: "Friday", time: "15:30", endTime: "16:15", stage: "Secret Gin Garden", name: "Gracie Mae" },
+  { day: "Friday", time: "16:45", endTime: "17:30", stage: "Secret Gin Garden", name: "The Silver Drummer" },
+  { day: "Friday", time: "18:00", endTime: "19:00", stage: "Secret Gin Garden", name: "Mike Dennis" },
+  { day: "Friday", time: "19:30", endTime: "20:30", stage: "Secret Gin Garden", name: "Rhys The Night Church Pianist" },
+  // Korev Experience
+  { day: "Friday", time: "12:00", endTime: "14:00", stage: "Korev Experience", name: "Caretaker" },
+  { day: "Friday", time: "14:00", endTime: "16:00", stage: "Korev Experience", name: "DJ Countryman" },
+  { day: "Friday", time: "16:00", endTime: "18:00", stage: "Korev Experience", name: "Mashorama" },
+  { day: "Friday", time: "18:00", endTime: "19:30", stage: "Korev Experience", name: "Tactical Raver" },
+  { day: "Friday", time: "19:30", endTime: "21:00", stage: "Korev Experience", name: "Louis Valentine" },
+  { day: "Friday", time: "21:00", endTime: "22:00", stage: "Korev Experience", name: "DJ Proof" },
+  { day: "Friday", time: "22:00", endTime: "23:00", stage: "Korev Experience", name: "Blank Canvas & Char" },
+  { day: "Friday", time: "23:00", endTime: "00:30", stage: "Korev Experience", name: "Beatles Dub Club" },
+  { day: "Friday", time: "00:30", endTime: "01:30", stage: "Korev Experience", name: "Silkworm" },
+  // Wellness / Zen Den / FolkWild / Workshops
+  { day: "Friday", time: "12:45", endTime: "13:45", stage: "Wellness Tent", name: "Intro to Massage" },
+  { day: "Friday", time: "14:00", endTime: "15:00", stage: "Wellness Tent", name: "Vision Board Workshop" },
+  { day: "Friday", time: "15:15", endTime: "16:15", stage: "Wellness Tent", name: "Intro to Forest Bathing" },
+  { day: "Friday", time: "16:30", endTime: "17:30", stage: "Wellness Tent", name: "Four Theives Vinegar Workshop" },
+  { day: "Friday", time: "17:45", endTime: "19:15", stage: "Wellness Tent", name: "Ecstatic Kundalini" },
+  { day: "Friday", time: "19:30", endTime: "20:30", stage: "Wellness Tent", name: "Human Rhythms" },
+  { day: "Friday", time: "14:00", endTime: "15:00", stage: "The Zen Den", name: "Opening Ceremony" },
+  { day: "Friday", time: "15:30", endTime: "16:30", stage: "The Zen Den", name: "High Dimension Meditation" },
+  { day: "Friday", time: "17:30", endTime: "18:30", stage: "The Zen Den", name: "Friday Flow Down" },
+  { day: "Friday", time: "19:00", endTime: "20:00", stage: "The Zen Den", name: "Soft Landing" },
+  { day: "Friday", time: "14:00", endTime: "15:00", stage: "FolkWild", name: "Potion Making" },
+  { day: "Friday", time: "15:30", endTime: "16:30", stage: "FolkWild", name: "Colourful Cabbage Chemistry" },
+  { day: "Friday", time: "12:00", endTime: "17:00", stage: "Workshops", name: "Post Office & Pigeon Post" },
+  { day: "Friday", time: "12:00", endTime: "17:00", stage: "Workshops", name: "Tie Dye Workshops" },
+  { day: "Friday", time: "15:15", endTime: "16:15", stage: "Workshops", name: "Forest Bathing (Meet Old Ivy Cafe)" },
+
+  // --- SATURDAY ---
+  // Stage on the Green
+  { day: "Saturday", time: "11:30", endTime: "12:15", stage: "Stage on the Green", name: "The Oggymen" },
+  { day: "Saturday", time: "12:45", endTime: "13:30", stage: "Stage on the Green", name: "William The Conqueror" },
+  { day: "Saturday", time: "14:00", endTime: "14:45", stage: "Stage on the Green", name: "Mr Griff" },
+  { day: "Saturday", time: "15:15", endTime: "16:00", stage: "Stage on the Green", name: "Malavita" },
+  { day: "Saturday", time: "16:30", endTime: "17:30", stage: "Stage on the Green", name: "Jo Hill" },
+  { day: "Saturday", time: "18:00", endTime: "19:00", stage: "Stage on the Green", name: "The Alive" },
+  { day: "Saturday", time: "19:30", endTime: "20:30", stage: "Stage on the Green", name: "Chevy Metal" },
+  { day: "Saturday", time: "21:15", endTime: "22:45", stage: "Stage on the Green", name: "Sophie Ellis Bextor" },
+  { day: "Saturday", time: "23:00", endTime: "01:30", stage: "Stage on the Green", name: "Silent Disco" },
+  // Madame Wong's
+  { day: "Saturday", time: "10:30", endTime: "11:30", stage: "Madame Wong's", name: "Circus Workshops" },
+  { day: "Saturday", time: "12:00", endTime: "13:00", stage: "Madame Wong's", name: "School Assembly Singalong" },
+  { day: "Saturday", time: "13:20", endTime: "14:00", stage: "Madame Wong's", name: "Mr B The Gentleman Rhymer" },
+  { day: "Saturday", time: "14:30", endTime: "16:15", stage: "Madame Wong's", name: "Drum Clinic w/ Shane Hawkins" },
+  { day: "Saturday", time: "16:30", endTime: "17:30", stage: "Madame Wong's", name: "Hip Hop Karaoke" },
+  { day: "Saturday", time: "18:00", endTime: "18:45", stage: "Madame Wong's", name: "The Elton John Experience" },
+  { day: "Saturday", time: "19:15", endTime: "20:00", stage: "Madame Wong's", name: "The Great Estate Drag Race" },
+  { day: "Saturday", time: "20:30", endTime: "21:15", stage: "Madame Wong's", name: "King Creature" },
+  { day: "Saturday", time: "21:45", endTime: "22:45", stage: "Madame Wong's", name: "Nic Cage Against The Machine" },
+  { day: "Saturday", time: "23:30", endTime: "00:15", stage: "Madame Wong's", name: "Talulah Blue's Cabaret" },
+  { day: "Saturday", time: "00:30", endTime: "01:30", stage: "Madame Wong's", name: "Simon Pegg DJ Set" },
+  // Talks at Teatime
+  { day: "Saturday", time: "12:00", endTime: "13:00", stage: "Talks at Teatime", name: "Chevy Metal - Life in Rock & Roll" },
+  { day: "Saturday", time: "13:30", endTime: "14:30", stage: "Talks at Teatime", name: "Simon Pegg (In Conversation With)" },
+  // The Wild Woods / Clunk
+  { day: "Saturday", time: "12:30", endTime: "13:00", stage: "The Wild Woods", name: "DIALLER" },
+  { day: "Saturday", time: "13:15", endTime: "13:45", stage: "The Wild Woods", name: "Redro" },
+  { day: "Saturday", time: "14:15", endTime: "15:00", stage: "The Wild Woods", name: "Love Fortress" },
+  { day: "Saturday", time: "15:30", endTime: "16:15", stage: "The Wild Woods", name: "The Heavenly Bodes" },
+  { day: "Saturday", time: "16:45", endTime: "17:30", stage: "The Wild Woods", name: "Ead Wood" },
+  { day: "Saturday", time: "18:15", endTime: "19:00", stage: "The Wild Woods", name: "Honest Work" },
+  { day: "Saturday", time: "19:30", endTime: "20:30", stage: "The Wild Woods", name: "Oswald Slain" },
+  { day: "Saturday", time: "21:00", endTime: "02:00", stage: "The Wild Woods", name: "Bang Bang Club Ft Jeremy Healy & Ry Spenceley" },
+  // Secret Gin Garden
+  { day: "Saturday", time: "11:00", endTime: "12:00", stage: "Secret Gin Garden", name: "Swing Dance Workshop" },
+  { day: "Saturday", time: "12:15", endTime: "13:00", stage: "Secret Gin Garden", name: "Alex Govier" },
+  { day: "Saturday", time: "13:30", endTime: "14:00", stage: "Secret Gin Garden", name: "The Story Republic" },
+  { day: "Saturday", time: "14:30", endTime: "15:00", stage: "Secret Gin Garden", name: "Opera Spectacular" },
+  { day: "Saturday", time: "15:30", endTime: "16:15", stage: "Secret Gin Garden", name: "The Blue Lions" },
+  { day: "Saturday", time: "16:45", endTime: "17:30", stage: "Secret Gin Garden", name: "Kernow King" },
+  { day: "Saturday", time: "17:45", endTime: "18:30", stage: "Secret Gin Garden", name: "Mr B The Gentleman Rhymer" },
+  { day: "Saturday", time: "19:00", endTime: "19:45", stage: "Secret Gin Garden", name: "Hedluv & Passman" },
+  { day: "Saturday", time: "20:15", endTime: "21:00", stage: "Secret Gin Garden", name: "Artificial Inelegance" },
+  // Korev Experience
+  { day: "Saturday", time: "12:00", endTime: "13:00", stage: "Korev Experience", name: "Caretaker" },
+  { day: "Saturday", time: "13:00", endTime: "15:00", stage: "Korev Experience", name: "Groove Mechanix" },
+  { day: "Saturday", time: "15:00", endTime: "16:30", stage: "Korev Experience", name: "Daz Beats" },
+  { day: "Saturday", time: "16:30", endTime: "18:30", stage: "Korev Experience", name: "Danae B" },
+  { day: "Saturday", time: "18:30", endTime: "20:00", stage: "Korev Experience", name: "Kitchen Disco Dave" },
+  { day: "Saturday", time: "20:00", endTime: "21:00", stage: "Korev Experience", name: "Space Flower" },
+  { day: "Saturday", time: "21:00", endTime: "22:00", stage: "Korev Experience", name: "Holocene" },
+  { day: "Saturday", time: "22:00", endTime: "23:00", stage: "Korev Experience", name: "Checkmate" },
+  { day: "Saturday", time: "23:00", endTime: "00:30", stage: "Korev Experience", name: "Indian Man" },
+  { day: "Saturday", time: "00:30", endTime: "01:30", stage: "Korev Experience", name: "Jake Healan" },
+  // Wellness / Zen / FolkWild / Workshops
+  { day: "Saturday", time: "09:30", endTime: "10:30", stage: "Wellness Tent", name: "Art Therapy Workshop" },
+  { day: "Saturday", time: "10:45", endTime: "11:45", stage: "Wellness Tent", name: "Tai Chi Qi Gong Shibashi" },
+  { day: "Saturday", time: "12:00", endTime: "15:00", stage: "Wellness Tent", name: "Needle Felting Drop in Workshop" },
+  { day: "Saturday", time: "12:00", endTime: "13:00", stage: "Wellness Tent", name: "Nature Connects CIC (Meet Outside)" },
+  { day: "Saturday", time: "15:15", endTime: "16:15", stage: "Wellness Tent", name: "Vision Board Workshop" },
+  { day: "Saturday", time: "16:30", endTime: "17:30", stage: "Wellness Tent", name: "Intro to Massage Workshop" },
+  { day: "Saturday", time: "17:45", endTime: "19:15", stage: "Wellness Tent", name: "Ecstatic Kundalini" },
+  { day: "Saturday", time: "19:30", endTime: "20:30", stage: "Wellness Tent", name: "Human Rhythms" },
+  { day: "Saturday", time: "09:00", endTime: "10:00", stage: "The Zen Den", name: "Power Yoga" },
+  { day: "Saturday", time: "10:30", endTime: "11:30", stage: "The Zen Den", name: "Kids Yoga with Kate" },
+  { day: "Saturday", time: "12:00", endTime: "13:00", stage: "The Zen Den", name: "Ecstatic Dance" },
+  { day: "Saturday", time: "13:30", endTime: "14:30", stage: "The Zen Den", name: "Slow Flow Yoga" },
+  { day: "Saturday", time: "15:30", endTime: "16:30", stage: "The Zen Den", name: "Movement Meditation" },
+  { day: "Saturday", time: "17:00", endTime: "18:00", stage: "The Zen Den", name: "Vinyasa Flow" },
+  { day: "Saturday", time: "19:00", endTime: "20:00", stage: "The Zen Den", name: "Sanctuary of sound and stillness" },
+  { day: "Saturday", time: "09:30", endTime: "11:00", stage: "FolkWild", name: "Wood Craft" },
+  { day: "Saturday", time: "11:15", endTime: "12:15", stage: "FolkWild", name: "Forest of Echoes" },
+  { day: "Saturday", time: "12:30", endTime: "13:30", stage: "FolkWild", name: "Floral and Fauna Sun Printing" },
+  { day: "Saturday", time: "13:45", endTime: "14:45", stage: "FolkWild", name: "Wild Floristry" },
+  { day: "Saturday", time: "15:00", endTime: "16:00", stage: "FolkWild", name: "Colourful Cabbage Chemistry" },
+  { day: "Saturday", time: "16:15", endTime: "17:15", stage: "FolkWild", name: "Fungi Villages" },
+  { day: "Saturday", time: "16:30", endTime: "17:30", stage: "FolkWild", name: "Fire Circle Cooking" },
+  { day: "Saturday", time: "11:00", endTime: "12:00", stage: "Workshops", name: "Swing Dance Workshop (Gin Garden)" },
+  { day: "Saturday", time: "12:00", endTime: "13:00", stage: "Workshops", name: "Bollywood Dance (Manor House)" },
+  { day: "Saturday", time: "11:00", endTime: "17:00", stage: "Workshops", name: "Post Office & Pigeon Post" },
+  { day: "Saturday", time: "11:00", endTime: "17:00", stage: "Workshops", name: "Tie Dye Workshops" },
+
+  // --- SUNDAY ---
+  // Stage on the Green
+  { day: "Sunday", time: "12:00", endTime: "12:45", stage: "Stage on the Green", name: "3 Daft Monkeys Duo" },
+  { day: "Sunday", time: "13:15", endTime: "14:00", stage: "Stage on the Green", name: "Petrea" },
+  { day: "Sunday", time: "14:30", endTime: "15:15", stage: "Stage on the Green", name: "Weston Loney" },
+  { day: "Sunday", time: "15:45", endTime: "16:30", stage: "Stage on the Green", name: "Mother Vulture" },
+  { day: "Sunday", time: "17:00", endTime: "17:45", stage: "Stage on the Green", name: "Little Grandad" },
+  { day: "Sunday", time: "18:15", endTime: "19:00", stage: "Stage on the Green", name: "Land Of The Giants" },
+  { day: "Sunday", time: "19:30", endTime: "20:30", stage: "Stage on the Green", name: "Tigress" },
+  { day: "Sunday", time: "21:15", endTime: "22:45", stage: "Stage on the Green", name: "Skunk Anansie" },
+  // Madame Wong's
+  { day: "Sunday", time: "10:30", endTime: "11:30", stage: "Madame Wong's", name: "Circus Workshops For all" },
+  { day: "Sunday", time: "12:00", endTime: "13:00", stage: "Madame Wong's", name: "Krelys (Ceilidh)" },
+  { day: "Sunday", time: "13:30", endTime: "14:30", stage: "Madame Wong's", name: "DJ Babybel & Cheesey Dippers" },
+  { day: "Sunday", time: "15:00", endTime: "15:45", stage: "Madame Wong's", name: "Swamp Circus" },
+  { day: "Sunday", time: "16:15", endTime: "17:15", stage: "Madame Wong's", name: "C Bone" },
+  { day: "Sunday", time: "17:45", endTime: "18:45", stage: "Madame Wong's", name: "Future Dub Orchestra" },
+  { day: "Sunday", time: "19:15", endTime: "19:45", stage: "Madame Wong's", name: "MC Hammersmith" },
+  { day: "Sunday", time: "20:30", endTime: "21:30", stage: "Madame Wong's", name: "Mid Nite Life" },
+  // Talks at Teatime
+  { day: "Sunday", time: "13:00", endTime: "14:00", stage: "Talks at Teatime", name: "Neil Ferris" },
+  { day: "Sunday", time: "15:00", endTime: "16:00", stage: "Talks at Teatime", name: "Skin (Skunk Anansie)" },
+  // The Wild Woods / Clunk
+  { day: "Sunday", time: "12:30", endTime: "13:15", stage: "The Wild Woods", name: "Kitty Crocker" },
+  { day: "Sunday", time: "13:30", endTime: "14:30", stage: "The Wild Woods", name: "Morning, Cat" },
+  { day: "Sunday", time: "15:00", endTime: "16:00", stage: "The Wild Woods", name: "Jacob Coley" },
+  { day: "Sunday", time: "16:30", endTime: "17:30", stage: "The Wild Woods", name: "Cosm" },
+  { day: "Sunday", time: "18:00", endTime: "19:00", stage: "The Wild Woods", name: "Mumble Tide" },
+  { day: "Sunday", time: "19:30", endTime: "20:30", stage: "The Wild Woods", name: "Classic Trucks" },
+  // Secret Gin Garden
+  { day: "Sunday", time: "11:00", endTime: "12:00", stage: "Secret Gin Garden", name: "Swing Dance Workshop" },
+  { day: "Sunday", time: "12:15", endTime: "13:00", stage: "Secret Gin Garden", name: "Alex Govier" },
+  { day: "Sunday", time: "13:30", endTime: "14:00", stage: "Secret Gin Garden", name: "The Story Republic" },
+  { day: "Sunday", time: "14:30", endTime: "15:30", stage: "Secret Gin Garden", name: "Comedy HQ" },
+  { day: "Sunday", time: "16:00", endTime: "16:45", stage: "Secret Gin Garden", name: "The Oggymen" },
+  { day: "Sunday", time: "17:15", endTime: "18:00", stage: "Secret Gin Garden", name: "Laura & The Jazz Capsule" },
+  { day: "Sunday", time: "18:30", endTime: "19:15", stage: "Secret Gin Garden", name: "Rue (Duo)" },
+  { day: "Sunday", time: "19:45", endTime: "20:30", stage: "Secret Gin Garden", name: "The Disappointments" },
+  // Korev Experience
+  { day: "Sunday", time: "12:00", endTime: "15:00", stage: "Korev Experience", name: "Put It On (Bring Your Own Vinyl)" },
+  { day: "Sunday", time: "15:00", endTime: "16:30", stage: "Korev Experience", name: "Ed Stein" },
+  { day: "Sunday", time: "16:30", endTime: "18:00", stage: "Korev Experience", name: "Director of Grooveology" },
+  { day: "Sunday", time: "18:00", endTime: "20:00", stage: "Korev Experience", name: "Wax On, Wax Off DJs" },
+  { day: "Sunday", time: "20:00", endTime: "22:00", stage: "Korev Experience", name: "Que Pasa" },
+  // Wellness / Zen / FolkWild / Workshops
+  { day: "Sunday", time: "09:00", endTime: "10:00", stage: "Wellness Tent", name: "Intro to Forest Bathing" },
+  { day: "Sunday", time: "10:15", endTime: "11:15", stage: "Wellness Tent", name: "Myndful Mushrooms Talk" },
+  { day: "Sunday", time: "11:30", endTime: "12:30", stage: "Wellness Tent", name: "Tai Chi Qi Gong Shibashi" },
+  { day: "Sunday", time: "12:00", endTime: "13:00", stage: "Wellness Tent", name: "Nature Connects CIC (Meet Outside)" },
+  { day: "Sunday", time: "12:45", endTime: "13:45", stage: "Wellness Tent", name: "Medicinal Plant Walk (Meet Outside)" },
+  { day: "Sunday", time: "12:45", endTime: "13:45", stage: "Wellness Tent", name: "Sonic Yin" },
+  { day: "Sunday", time: "14:00", endTime: "15:00", stage: "Wellness Tent", name: "Mindfulness for Kids" },
+  { day: "Sunday", time: "15:15", endTime: "16:15", stage: "Wellness Tent", name: "Art Therapy Workshop" },
+  { day: "Sunday", time: "16:30", endTime: "17:30", stage: "Wellness Tent", name: "Upcycled Textile Jewellery" },
+  { day: "Sunday", time: "09:00", endTime: "10:00", stage: "The Zen Den", name: "Sunday Morning Shake Out" },
+  { day: "Sunday", time: "10:30", endTime: "11:30", stage: "The Zen Den", name: "Family Yoga" },
+  { day: "Sunday", time: "12:00", endTime: "13:00", stage: "The Zen Den", name: "Yin Yoga" },
+  { day: "Sunday", time: "14:30", endTime: "15:30", stage: "The Zen Den", name: "Baby Sling Dance" },
+  { day: "Sunday", time: "16:30", endTime: "17:30", stage: "The Zen Den", name: "Closing Sound Ceremony" },
+  { day: "Sunday", time: "10:00", endTime: "11:00", stage: "FolkWild", name: "Mud Painting" },
+  { day: "Sunday", time: "11:15", endTime: "12:15", stage: "FolkWild", name: "Upcycled Bird Feeders" },
+  { day: "Sunday", time: "12:30", endTime: "13:30", stage: "FolkWild", name: "Forest of Echoes" },
+  { day: "Sunday", time: "13:45", endTime: "14:45", stage: "FolkWild", name: "Floral and Fauna Sun Printing" },
+  { day: "Sunday", time: "15:00", endTime: "16:00", stage: "FolkWild", name: "Musical wooden shakers" },
+  { day: "Sunday", time: "16:15", endTime: "17:15", stage: "FolkWild", name: "Hapa Zome" },
+  { day: "Sunday", time: "16:30", endTime: "17:30", stage: "FolkWild", name: "Fire Circle Cooking" },
+  { day: "Sunday", time: "09:00", endTime: "10:00", stage: "Workshops", name: "Forest Bathing (Meet Old Ivy Cafe)" },
+  { day: "Sunday", time: "12:00", endTime: "13:00", stage: "Workshops", name: "Motown Dance (Manor House)" },
+  { day: "Sunday", time: "15:30", endTime: "16:30", stage: "Workshops", name: "Hula Hoop Workshop (Manor House)" },
+  { day: "Sunday", time: "11:00", endTime: "17:00", stage: "Workshops", name: "Post Office & Pigeon Post" },
+  { day: "Sunday", time: "11:00", endTime: "17:00", stage: "Workshops", name: "Tie Dye Workshops" }
+];
+
+let currentDay = "Friday";
+let filterNow = false;
+let filterFavs = false;
+let favorites = JSON.parse(localStorage.getItem('ge-favs') || '[]');
+
+function toggleFav(name) {
+  if(favorites.includes(name)) {
+    favorites = favorites.filter(f => f !== name);
+  } else {
+    favorites.push(name);
+  }
+  localStorage.setItem('ge-favs', JSON.stringify(favorites));
+  render();
+}
+
+function isHappeningNow(time, endTime) {
+  const now = new Date();
+  const nowHour = now.getHours();
+  const nowMin = now.getMinutes();
+  const currentTimeStr = `${nowHour.toString().padStart(2,'0')}:${nowMin.toString().padStart(2,'0')}`;
+  
+  if (endTime < time) {
+    return currentTimeStr >= time || currentTimeStr < endTime;
+  }
+  return currentTimeStr >= time && currentTimeStr < endTime;
+}
+
+function render() {
+  const container = document.getElementById('schedule-container');
+  container.innerHTML = '';
+
+  let acts = schedule;
+  
+  if(filterFavs) {
+    acts = acts.filter(a => favorites.includes(a.name));
+  } else if(filterNow) {
+    acts = acts.filter(a => isHappeningNow(a.time, a.endTime));
+  } else {
+    acts = acts.filter(a => a.day === currentDay);
+  }
+  
+  acts.sort((a,b) => a.time.localeCompare(b.time));
+
+  if(acts.length === 0) {
+    const msg = filterNow ? "Nothing is actively scheduled right now. Check out the Drop-in events!" : "No acts found for this selection.";
+    container.innerHTML = `<p style="text-align:center; color:#666; margin-top:20px;">${msg}</p>`;
+    return;
+  }
+
+  acts.forEach(act => {
+    const isFav = favorites.includes(act.name);
+    const isNow = isHappeningNow(act.time, act.endTime);
+    
+    const card = document.createElement('div');
+    card.className = `act-card ${isNow && !filterNow ? 'now' : ''}`;
+    
+    card.innerHTML = `
+      <div class="time">${act.time}<br><span style="font-size:0.75em; color:#999; font-weight:normal;">until ${act.endTime}</span></div>
+      <div class="details">
+        <div class="act-name">${act.name}</div>
+        <div class="stage">${act.stage} ${filterFavs || filterNow ? '<br>(' + act.day + ')' : ''}</div>
+      </div>
+      <div class="star ${isFav ? 'active' : ''}" onclick="toggleFav('${act.name}')">★</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+document.querySelectorAll('.day-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    currentDay = e.target.getAttribute('data-day');
+    filterNow = false; filterFavs = false;
+    document.getElementById('btn-now').classList.remove('active');
+    document.getElementById('btn-favs').classList.remove('active');
+    render();
+  });
+});
+
+document.getElementById('btn-now').addEventListener('click', (e) => {
+  filterNow = !filterNow;
+  filterFavs = false;
+  e.target.classList.toggle('active');
+  document.getElementById('btn-favs').classList.remove('active');
+  document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+  render();
+});
+
+document.getElementById('btn-favs').addEventListener('click', (e) => {
+  filterFavs = !filterFavs;
+  filterNow = false;
+  e.target.classList.toggle('active');
+  document.getElementById('btn-now').classList.remove('active');
+  document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+  render();
+});
+
+render();
+setInterval(render, 60000);
+</script>
+</body>
+</html>
