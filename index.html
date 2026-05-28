@@ -320,32 +320,53 @@ function toggleFav(name) {
   render();
 }
 
-function isHappeningNow(actDay, time, endTime) {
+// Converts an "HH:MM" string into minutes since the festival day's 6 AM start.
+// Times before 6 AM belong to the previous day's lineup, so they land in the
+// 24:00-30:00 range. This also makes acts crossing midnight (e.g. 23:00 -> 01:30)
+// compare correctly without special-casing.
+function toFestivalMinutes(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  let mins = h * 60 + m;
+  if (h < 6) mins += 24 * 60;
+  return mins;
+}
+
+// Returns the current festival day name and the current time expressed in
+// festival minutes (same scale as toFestivalMinutes).
+function festivalContext() {
   const now = new Date();
   let dayIndex = now.getDay();
-  
+
   // Festival logic: Events before 6 AM belong to the previous day's lineup
   if (now.getHours() < 6) {
     dayIndex = dayIndex === 0 ? 6 : dayIndex - 1;
   }
-  
-  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const currentFestivalDay = days[dayIndex];
-  
-  // If the act isn't scheduled for today, return false immediately
-  if (actDay !== currentFestivalDay) {
-    return false;
-  }
 
-  const nowHour = now.getHours();
-  const nowMin = now.getMinutes();
-  const currentTimeStr = `${nowHour.toString().padStart(2,'0')}:${nowMin.toString().padStart(2,'0')}`;
-  
-  if (endTime < time) {
-    // Handles late night acts (e.g., 23:00 to 01:30)
-    return currentTimeStr >= time || currentTimeStr < endTime;
-  }
-  return currentTimeStr >= time && currentTimeStr < endTime;
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  let nowMins = now.getHours() * 60 + now.getMinutes();
+  if (now.getHours() < 6) nowMins += 24 * 60;
+
+  return { day: days[dayIndex], nowMins };
+}
+
+function isHappeningNow(actDay, time, endTime) {
+  const { day, nowMins } = festivalContext();
+  if (actDay !== day) return false;
+
+  const start = toFestivalMinutes(time);
+  const end = toFestivalMinutes(endTime);
+  return nowMins >= start && nowMins < end;
+}
+
+// True if the act is on at any point during the next hour, i.e. it overlaps
+// the window [now, now + 60min].
+function isOnWithinNextHour(actDay, time, endTime) {
+  const { day, nowMins } = festivalContext();
+  if (actDay !== day) return false;
+
+  const start = toFestivalMinutes(time);
+  const end = toFestivalMinutes(endTime);
+  return start < nowMins + 60 && end > nowMins;
 }
 
 function render() {
@@ -357,8 +378,8 @@ function render() {
   if(filterFavs) {
     acts = acts.filter(a => favorites.includes(a.name));
   } else if(filterNow) {
-    // We now pass a.day into the isHappeningNow function!
-    acts = acts.filter(a => isHappeningNow(a.day, a.time, a.endTime));
+    // Everything on at any point in the next hour (currently live + starting soon)
+    acts = acts.filter(a => isOnWithinNextHour(a.day, a.time, a.endTime));
   } else {
     acts = acts.filter(a => a.day === currentDay);
   }
@@ -366,7 +387,7 @@ function render() {
   acts.sort((a,b) => a.time.localeCompare(b.time));
 
   if(acts.length === 0) {
-    const msg = filterNow ? "Nothing is actively scheduled right now. Check out the Drop-in events!" : "No acts found for this selection.";
+    const msg = filterNow ? "Nothing scheduled in the next hour. Check out the Drop-in events!" : "No acts found for this selection.";
     container.innerHTML = `<p style="text-align:center; color:#666; margin-top:20px;">${msg}</p>`;
     return;
   }
@@ -377,7 +398,7 @@ function render() {
     const isNow = isHappeningNow(act.day, act.time, act.endTime);
     
     const card = document.createElement('div');
-    card.className = `act-card ${isNow && !filterNow ? 'now' : ''}`;
+    card.className = `act-card ${isNow ? 'now' : ''}`;
     
     card.innerHTML = `
       <div class="time">${act.time}<br><span style="font-size:0.75em; color:#999; font-weight:normal;">until ${act.endTime}</span></div>
