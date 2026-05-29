@@ -369,6 +369,21 @@ function isOnWithinNextHour(actDay, time, endTime) {
   return start < nowMins + 60 && end > nowMins;
 }
 
+// Order the day buttons appear in, used to group acts when several days are
+// shown at once (Favourites / What's On Now).
+const dayOrder = ["Friday", "Saturday", "Sunday"];
+
+// Sort key combining day and time. Times before 4 AM are treated as the small
+// hours at the end of their listed day (e.g. Friday 00:30 sorts after Friday
+// 23:00, not before midday), so the late-night run reads in order.
+function sortKey(act) {
+  const [h, m] = act.time.split(':').map(Number);
+  let mins = h * 60 + m;
+  if (h < 4) mins += 24 * 60;
+  const dayIndex = dayOrder.indexOf(act.day);
+  return dayIndex * 10000 + mins;
+}
+
 function render() {
   const container = document.getElementById('schedule-container');
   container.innerHTML = '';
@@ -384,7 +399,7 @@ function render() {
     acts = acts.filter(a => a.day === currentDay);
   }
   
-  acts.sort((a,b) => a.time.localeCompare(b.time));
+  acts.sort((a,b) => sortKey(a) - sortKey(b));
 
   if(acts.length === 0) {
     const msg = filterNow ? "Nothing scheduled in the next hour. Check out the Drop-in events!" : "No acts found for this selection.";
