@@ -1,0 +1,45 @@
+{
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "name": "Great Estate 2026 Planner",
+  "short_name": "GE 2026",
+  "description": "Interactive personal planner for the Great Estate 2026 festival – browse the line-up by day, see what's on now, and save your favourites.",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#cdebf1",
+  "theme_color": "#404041",
+  "categories": ["entertainment", "music", "lifestyle"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

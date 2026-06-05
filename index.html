@@ -4,6 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Great Estate 2026 Planner</title>
+<meta name="description" content="Interactive personal planner for the Great Estate 2026 festival – browse the line-up by day, see what's on now, and save your favourites.">
+
+<!-- PWA: installability -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#404041">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GE 2026">
+<!-- Optional: paste an origin-trial token from
+     https://developer.chrome.com/origintrials to enable the native <install>
+     button. Without it, the in-page fallback button below is used instead. -->
+<!-- <meta http-equiv="origin-trial" content="YOUR_ORIGIN_TRIAL_TOKEN"> -->
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
@@ -73,6 +90,26 @@
   .stage { font-size: 0.9em; color: #7a7a7b; }
   .star { font-size: 1.8em; color: #ddd; cursor: pointer; user-select: none; transition: color 0.2s;}
   .star.active { color: #e0b53c; }
+
+  /* Install affordance: the native <install> element renders its own trusted
+     button where supported; elsewhere the fallback button inside it is used. */
+  .install-wrap { margin-top: 10px; }
+  .install-wrap[hidden] { display: none; }
+  install { display: inline-block; }
+  #install-btn[hidden] { display: none; }
+  #install-btn {
+    font-family: var(--body); font-weight: bold;
+    background: var(--gold); color: var(--primary);
+    border: none; border-radius: 20px; padding: 9px 20px;
+    cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  #install-help {
+    max-width: 320px; margin: 10px auto 0; padding: 12px 14px;
+    background: #f7f0d8; color: var(--primary); border-radius: 12px;
+    font-size: 0.85em; line-height: 1.45; text-align: left;
+  }
+  #install-help[hidden] { display: none; }
+  #install-help strong { font-family: var(--heading); letter-spacing: 0.04em; }
 </style>
 </head>
 <body>
@@ -80,6 +117,20 @@
 <header>
   <h1>Great Estate 2026</h1>
   <div style="font-size: 0.9em; margin-top: 5px;">Interactive Personal Planner</div>
+
+  <!-- Declarative install element (Chrome origin trial). Browsers that support
+       it render a trusted install button and ignore the fallback child; older
+       browsers show the fallback button, which we wire up in script. -->
+  <div class="install-wrap" id="install-wrap" hidden>
+    <install id="ge-install">
+      <button id="install-btn" type="button" hidden>⬇️ Install App</button>
+    </install>
+  </div>
+  <div id="install-help" hidden>
+    <strong>Add to Home Screen</strong><br>
+    Tap the <strong>Share</strong> icon below, then choose
+    <strong>“Add to Home Screen”</strong> to install this planner.
+  </div>
 </header>
 
 <div class="controls" id="day-controls">
@@ -477,6 +528,86 @@ document.getElementById('btn-favs').addEventListener('click', (e) => {
 
 render();
 setInterval(render, 60000);
+</script>
+
+<script>
+// --- Progressive Web App: install + offline -------------------------------
+(function () {
+  'use strict';
+
+  // Service worker enables offline use and is part of the installability bar.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function (err) {
+        console.warn('Service worker registration failed:', err);
+      });
+    });
+  }
+
+  var wrap = document.getElementById('install-wrap');
+  var btn = document.getElementById('install-btn');
+  var help = document.getElementById('install-help');
+
+  // Already launched as an installed app? Don't advertise installation.
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+  if (isStandalone) return;
+
+  var deferredPrompt = null;
+  // Per the article, feature-detect the native <install> element this way.
+  var nativeInstallSupported = ('HTMLInstallElement' in window);
+
+  function showWrap() { wrap.hidden = false; }
+
+  // Where the native <install> element exists, the browser draws its own
+  // trusted button — just reveal the container and let it do the work.
+  if (nativeInstallSupported) showWrap();
+
+  // Chromium fallback: capture the deferred prompt and surface our own button.
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!nativeInstallSupported) {
+      btn.hidden = false;
+      showWrap();
+    }
+  });
+
+  // iOS / iPadOS Safari fires no beforeinstallprompt and has no
+  // navigator.install, so offer manual Add-to-Home-Screen instructions.
+  var ua = window.navigator.userAgent;
+  var isIOS = /iPad|iPhone|iPod/.test(ua)
+    || (ua.indexOf('Macintosh') > -1 && 'ontouchend' in document);
+  var isiOSSafari = isIOS && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+  if (!nativeInstallSupported && isiOSSafari) {
+    btn.hidden = false;
+    showWrap();
+  }
+
+  btn.addEventListener('click', function () {
+    // 1) Imperative navigator.install(), where available.
+    if (typeof navigator.install === 'function') {
+      navigator.install().catch(function () {});
+      return;
+    }
+    // 2) Saved Chromium prompt.
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.finally(function () { deferredPrompt = null; });
+      return;
+    }
+    // 3) iOS / unknown: toggle the manual instructions.
+    help.hidden = !help.hidden;
+  });
+
+  // Tidy up once installed.
+  window.addEventListener('appinstalled', function () {
+    deferredPrompt = null;
+    btn.hidden = true;
+    help.hidden = true;
+    wrap.hidden = true;
+  });
+}());
 </script>
 </body>
 </html>
